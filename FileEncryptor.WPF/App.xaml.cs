@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Windows;
 using FileEncryptor.WPF.Services;
 using FileEncryptor.WPF.ViewModels;
@@ -12,6 +13,9 @@ namespace FileEncryptor.WPF
     /// </summary>
     public partial class App
     {
+        public static Window FocusedWindow => Current.Windows.Cast<Window>().FirstOrDefault(w => w.IsFocused);
+        public static Window ActiveWindow => Current.Windows.Cast<Window>().FirstOrDefault(w => w.IsActive);
+
         private static IHost __Host;
 
         public static IHost Host => __Host ??= Program.CreateHostBuilder(Environment.GetCommandLineArgs()).Build();

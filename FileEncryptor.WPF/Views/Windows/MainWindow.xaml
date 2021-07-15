@@ -9,7 +9,7 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="File">
-                <MenuItem Header="Exit"></MenuItem>
+                <MenuItem Header="Exit" Command="{StaticResource CloseWindowCommand}"/>
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
