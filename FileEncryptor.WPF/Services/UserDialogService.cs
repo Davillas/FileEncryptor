@@ -24,7 +24,7 @@ namespace FileEncryptor.WPF.Services
             }
 
             SelectedFile = file_dialog.FileName;
-
+            return true;
         }
 
         public bool OpenFiles(string Title, out IEnumerable<string> SelectedFiles, string Filter = "All (*.*)|*.*")
