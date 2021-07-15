@@ -18,7 +18,42 @@
             </StatusBarItem>
             <StatusBarItem Content="Ready!"></StatusBarItem>
         </StatusBar>
-        <Grid></Grid>
+        <Grid Margin="4">
+            <Grid.Resources>
+                <Style TargetType="TextBlock">
+                    <Style.Triggers>
+                        <Trigger Property="Grid.Column" Value="0">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Setter Property="Margin" Value="0,0,3,0"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Resources>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition Height="Auto"></RowDefinition>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Grid.Row="0" Text="Password:"/>
+            <TextBox Grid.Column="1" Grid.Row="0" Text="Enter Password..."/>
+            
+            
+            <TextBlock Grid.Column="0" Grid.Row="1" Text="File:"/>
+            <DockPanel Grid.Column="1" Grid.Row="1">
+                <Button DockPanel.Dock="Right" Content="Browse" Padding="5,0"/>
+                <TextBox IsReadOnly="True" BorderThickness="0"/>
+
+            </DockPanel>
+        </Grid>
 
     </DockPanel>
 </Window>
