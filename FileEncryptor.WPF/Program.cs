@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Microsoft.Extensions.Hosting;
 
 namespace FileEncryptor.WPF
 {
@@ -14,5 +15,9 @@ namespace FileEncryptor.WPF
             app.Run();
 
         }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureServices(App.ConfigureServices);
     }
 }
