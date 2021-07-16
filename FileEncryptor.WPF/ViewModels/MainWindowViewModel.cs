@@ -109,10 +109,18 @@ namespace FileEncryptor.WPF.ViewModels
             var timer = Stopwatch.StartNew();
 
             ((BaseCommand) EncryptCommand).Executable = false;
-            var encryption_task = _Encryptor.EncryptAsync(file.FullName, destination_path, Password);
+            ((BaseCommand) DecryptCommand).Executable = false;
+            
             /*   Additional code that runs in parallel to encryption process   */
-            await encryption_task;
+            try
+            {
+                await _Encryptor.EncryptAsync(file.FullName, destination_path, Password);
+            }
+            catch (OperationCanceledException)
+            {
+            }
             ((BaseCommand)EncryptCommand).Executable = true;
+            ((BaseCommand)DecryptCommand).Executable = true;
 
             timer.Stop();
             _UserDialog.Information("Encryption", $"Encryption has been finished in {timer.Elapsed.TotalSeconds:0.##}s");
@@ -146,11 +154,19 @@ namespace FileEncryptor.WPF.ViewModels
             var timer = Stopwatch.StartNew();
 
 
+            ((BaseCommand)EncryptCommand).Executable = false;
             ((BaseCommand)DecryptCommand).Executable = false;
             var decryption_task = _Encryptor.DecryptAsync(file.FullName, destination_path, Password);
             /*   Additional code that runs in parallel to encryption process   */
-            var success = await decryption_task;
-
+            var success = false;
+            try
+            { 
+                success = await decryption_task;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            ((BaseCommand)EncryptCommand).Executable = true;
             ((BaseCommand)DecryptCommand).Executable = true;
 
 
