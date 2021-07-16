@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Printing;
 using System.Security.Cryptography;
+using System.Security.Policy;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using FileEncryptor.WPF.Services.Interfaces;
 
 namespace FileEncryptor.WPF.Services
@@ -86,5 +88,66 @@ namespace FileEncryptor.WPF.Services
 
             return true;
         }
+
+
+        public async Task EncryptAsync(string SourcePath, string DestinationPath, string Password, int BufferLength = 104200)
+        {
+
+            if (!File.Exists(SourcePath)) throw new FileNotFoundException();
+            if (BufferLength <= 0) throw new ArgumentOutOfRangeException(nameof(BufferLength), BufferLength, "Buffer size should be larger!");
+                
+
+            var encryptor = GetEncryptor(Password/*, Encoding.UTF8.GetBytes(SourcePath)*/);
+
+            await using var destination_encryptor = File.Create(DestinationPath, BufferLength);
+            await using var destination = new CryptoStream(destination_encryptor, encryptor, CryptoStreamMode.Write);
+            await using var source = File.OpenRead(SourcePath);
+
+            var buffer = new byte[BufferLength];
+            int readed;
+            do
+            {
+                Thread.Sleep(1);
+                readed = await source.ReadAsync(buffer, 0, BufferLength).ConfigureAwait(false);
+                await destination.WriteAsync(buffer, 0, readed).ConfigureAwait(false);
+            } while (readed > 0);
+
+            destination.FlushFinalBlock();
+        }
+
+
+        public async Task<bool> DecryptAsync(string SourcePath, string DestinationPath, string Password, int BufferLength = 104200)
+        {
+            if (!File.Exists(SourcePath)) throw new FileNotFoundException();
+            if (BufferLength <= 0) throw new ArgumentOutOfRangeException(nameof(BufferLength), BufferLength, "Buffer size should be larger!");
+
+            var decryptor = GetDecryptor(Password);
+
+            await using var destination_decrypted = File.Create(DestinationPath, BufferLength);
+
+            await using var destination = new CryptoStream(destination_decrypted, decryptor, CryptoStreamMode.Write);
+            await using var encrypted_source = File.OpenRead(SourcePath);
+
+            var buffer = new byte[BufferLength];
+            int readed;
+            do
+            {
+                readed = await encrypted_source.ReadAsync(buffer, 0, BufferLength).ConfigureAwait(false);
+                await destination.WriteAsync(buffer, 0, readed).ConfigureAwait(false);
+            } while (readed > 0);
+
+            try
+            {
+                destination.FlushFinalBlock();
+            }
+            catch (CryptographicException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+
     }
 }

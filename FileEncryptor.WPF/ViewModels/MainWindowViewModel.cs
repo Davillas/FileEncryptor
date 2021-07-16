@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Windows.Input;
 using FileEncryptor.WPF.Infrastructure.Commands;
+using FileEncryptor.WPF.Infrastructure.Commands.Base;
 using FileEncryptor.WPF.Services.Interfaces;
 using FileEncryptor.WPF.ViewModels.Base;
 
@@ -96,7 +97,7 @@ namespace FileEncryptor.WPF.ViewModels
         private bool CanEncryptCommandExecute(object p) => (p is FileInfo file && file.Exists || SelectedFile !=null) && !string.IsNullOrWhiteSpace(Password);
 
         /// <summary>Логика выполнения - Encryption Command</summary>
-        private void OnEncryptCommandExecuted(object p)
+        private async void OnEncryptCommandExecuted(object p)
         {
             var file = p as FileInfo ?? SelectedFile;
             if(file is null) return;
@@ -106,7 +107,13 @@ namespace FileEncryptor.WPF.ViewModels
 
 
             var timer = Stopwatch.StartNew();
-            _Encryptor.Encrypt(file.FullName, destination_path, Password);
+
+            ((BaseCommand) EncryptCommand).Executable = false;
+            var encryption_task = _Encryptor.EncryptAsync(file.FullName, destination_path, Password);
+            /*   Additional code that runs in parallel to encryption process   */
+            await encryption_task;
+            ((BaseCommand)EncryptCommand).Executable = true;
+
             timer.Stop();
             _UserDialog.Information("Encryption", $"Encryption has been finished in {timer.Elapsed.TotalSeconds:0.##}s");
         }
@@ -126,7 +133,7 @@ namespace FileEncryptor.WPF.ViewModels
         private bool CanDecryptCommandExecute(object p) => (p is FileInfo file && file.Exists || SelectedFile != null) && !string.IsNullOrWhiteSpace(Password);
 
         /// <summary>Логика выполнения - Decryption Command</summary>
-        private void OnDecryptCommandExecuted(object p)
+        private async void OnDecryptCommandExecuted(object p)
         {
             var file = p as FileInfo ?? SelectedFile;
             if (file is null) return;
@@ -137,7 +144,16 @@ namespace FileEncryptor.WPF.ViewModels
             if (!_UserDialog.SaveFile("Choose save destination", out var destination_path, destination_file_name)) return;
 
             var timer = Stopwatch.StartNew();
-            var success = _Encryptor.Decrypt(file.FullName, destination_path, Password);
+
+
+            ((BaseCommand)DecryptCommand).Executable = false;
+            var decryption_task = _Encryptor.DecryptAsync(file.FullName, destination_path, Password);
+            /*   Additional code that runs in parallel to encryption process   */
+            var success = await decryption_task;
+
+            ((BaseCommand)DecryptCommand).Executable = true;
+
+
             timer.Stop();
 
             if (success)
