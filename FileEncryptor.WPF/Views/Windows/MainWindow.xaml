@@ -16,6 +16,24 @@
             <StatusBarItem  DockPanel.Dock="Right">
                 <ResizeGrip/>
             </StatusBarItem>
+            <StatusBarItem DockPanel.Dock="Right">
+                <DockPanel>
+                    <DockPanel.Style>
+                        <Style TargetType="DockPanel">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ProgressValue}" Value="0">
+                                    <Setter Property="Visibility" Value="Hidden"></Setter>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ProgressValue}" Value="1">
+                                    <Setter Property="Visibility" Value="Hidden"></Setter>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DockPanel.Style>
+                    <TextBlock DockPanel.Dock="Right" Text="{Binding ProgressValue, StringFormat=p1}" MinWidth="40" TextAlignment="Right"/>
+                    <ProgressBar Width="200" Height="10" Maximum="1" Value="{Binding ProgressValue}" ></ProgressBar>
+                </DockPanel>
+            </StatusBarItem>
             <StatusBarItem Content="Ready!"></StatusBarItem>
         </StatusBar>
         <Grid Margin="4">
@@ -67,6 +85,8 @@
                         CommandParameter=""/>
                 <Button Content="Decrypt" Margin="5" Padding="30,10" 
                         Command="{Binding DecryptCommand}"/>
+                <Button Content="Abort" Margin="5" Padding="30,10" 
+                        Command="{Binding AbortCommand}"/>
             </UniformGrid>
 
 

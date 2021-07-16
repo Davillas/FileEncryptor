@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Windows.Input;
 using FileEncryptor.WPF.Infrastructure.Commands;
 using FileEncryptor.WPF.Infrastructure.Commands.Base;
@@ -17,6 +18,8 @@ namespace FileEncryptor.WPF.ViewModels
 
         private readonly IUserDialog _UserDialog;
         private readonly IEncryptor _Encryptor;
+
+        private CancellationTokenSource _ProcessAbortion;
 
         #region Title : string - Title of Window
 
@@ -59,6 +62,21 @@ namespace FileEncryptor.WPF.ViewModels
         }
 
         #endregion
+
+        #region ProgressValue : double - ProgressValue
+
+        /// <summary>ProgressValue</summary>
+        private double _ProgressValue;
+
+        /// <summary>ProgressValue</summary>
+        public double ProgressValue
+        {
+            get => _ProgressValue;
+            set => Set(ref _ProgressValue, value);
+        }
+
+        #endregion
+
 
         #region Commands
 
@@ -108,16 +126,27 @@ namespace FileEncryptor.WPF.ViewModels
 
             var timer = Stopwatch.StartNew();
 
+            var progress = new Progress<double>(percent => ProgressValue = percent);
+
+            _ProcessAbortion = new CancellationTokenSource();
+
+
             ((BaseCommand) EncryptCommand).Executable = false;
             ((BaseCommand) DecryptCommand).Executable = false;
             
             /*   Additional code that runs in parallel to encryption process   */
             try
             {
-                await _Encryptor.EncryptAsync(file.FullName, destination_path, Password);
+                await _Encryptor.EncryptAsync(file.FullName, destination_path, Password, Progress: progress,
+                    Cancel: _ProcessAbortion.Token);
             }
             catch (OperationCanceledException)
             {
+            }
+            finally
+            {
+                _ProcessAbortion.Dispose();
+                _ProcessAbortion = null;
             }
             ((BaseCommand)EncryptCommand).Executable = true;
             ((BaseCommand)DecryptCommand).Executable = true;
@@ -154,17 +183,26 @@ namespace FileEncryptor.WPF.ViewModels
             var timer = Stopwatch.StartNew();
 
 
+            var progress = new Progress<double>(percent => ProgressValue = percent);
+
+            _ProcessAbortion = new CancellationTokenSource();
+
             ((BaseCommand)EncryptCommand).Executable = false;
             ((BaseCommand)DecryptCommand).Executable = false;
-            var decryption_task = _Encryptor.DecryptAsync(file.FullName, destination_path, Password);
+            var decryption_task = _Encryptor.DecryptAsync(file.FullName, destination_path, Password, Progress: progress, Cancel: _ProcessAbortion.Token);
             /*   Additional code that runs in parallel to encryption process   */
             var success = false;
             try
-            { 
+            {
                 success = await decryption_task;
             }
             catch (OperationCanceledException)
             {
+            }
+            finally
+            {
+                _ProcessAbortion.Dispose();
+                _ProcessAbortion = null;
             }
             ((BaseCommand)EncryptCommand).Executable = true;
             ((BaseCommand)DecryptCommand).Executable = true;
@@ -180,6 +218,22 @@ namespace FileEncryptor.WPF.ViewModels
 
         #endregion
 
+        #region Command AbortCommand - Abort Operation
+
+        /// <summaryAbort Operation</summary>
+        private ICommand _AbortCommand;
+
+        /// <summary>Abort Operation</summary>
+        public ICommand AbortCommand => _AbortCommand
+            ??= new LambdaCommand(OnAbortCommandExecuted, CanAbortCommandExecute);
+
+        /// <summary>Проверка возможности выполнения - Abort Operation</summary>
+        private bool CanAbortCommandExecute(object p) => _ProcessAbortion != null && !_ProcessAbortion.IsCancellationRequested;
+
+        /// <summary>Логика выполнения - Abort Operation</summary>
+        private void OnAbortCommandExecuted(object p) => _ProcessAbortion.Cancel();
+
+        #endregion
         #endregion
 
 

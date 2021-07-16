@@ -119,16 +119,21 @@ namespace FileEncryptor.WPF.Services
 
                 var buffer = new byte[BufferLength];
                 int readed;
+                var last_percent = 0.0;
                 do
                 {
                     readed = await source.ReadAsync(buffer, 0, BufferLength, Cancel).ConfigureAwait(false);
                     await destination.WriteAsync(buffer, 0, readed, Cancel).ConfigureAwait(false);
 
                     var position = source.Position;
+                    var percent = (double) position / file_length;
+                    if (percent - last_percent > 0.001)
+                    {
+                        Progress?.Report(percent);
+                        last_percent = percent;
+                    }
 
-                    Progress?.Report((double)position / file_length);
-
-                    Thread.Sleep(1);
+                    // Thread.Sleep(1);
 
                     if (Cancel.IsCancellationRequested)
                     {
@@ -178,14 +183,20 @@ namespace FileEncryptor.WPF.Services
 
                 var buffer = new byte[BufferLength];
                 int readed;
+                var last_percent = 0.0;
+
                 do
                 {
                     readed = await encrypted_source.ReadAsync(buffer, 0, BufferLength, Cancel).ConfigureAwait(false);
                     await destination.WriteAsync(buffer, 0, readed, Cancel).ConfigureAwait(false);
 
                     var position = encrypted_source.Position;
-
-                    Progress?.Report((double) position / file_length);
+                    var percent = (double)position / file_length;
+                    if (percent - last_percent > 0.001)
+                    {
+                        Progress?.Report(percent);
+                        last_percent = percent;
+                    }
 
                     Cancel.ThrowIfCancellationRequested();
 
