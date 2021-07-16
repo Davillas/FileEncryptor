@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Windows.Input;
@@ -11,7 +12,10 @@ namespace FileEncryptor.WPF.ViewModels
 {
     internal class MainWindowViewModel : BaseViewModel
     {
+        private string __EncryptedFileSuffix = ".encrypted";
+
         private readonly IUserDialog _UserDialog;
+        private readonly IEncryptor _Encryptor;
 
         #region Title : string - Title of Window
 
@@ -30,7 +34,7 @@ namespace FileEncryptor.WPF.ViewModels
         #region Password : string - Password
 
         /// <summary>Password</summary>
-        private string _Password;
+        private string _Password = "123";
 
         /// <summary>Password</summary>
         public string Password
@@ -96,6 +100,15 @@ namespace FileEncryptor.WPF.ViewModels
         {
             var file = p as FileInfo ?? SelectedFile;
             if(file is null) return;
+
+            var destination_file_name = file.FullName + __EncryptedFileSuffix;
+            if(!_UserDialog.SaveFile("Choose save destination", out var destination_path, destination_file_name)) return;
+
+
+            var timer = Stopwatch.StartNew();
+            _Encryptor.Encrypt(file.FullName, destination_path, Password);
+            timer.Stop();
+            _UserDialog.Information("Encryption", $"Encryption has been finished in {timer.Elapsed.TotalSeconds:0.##}s");
         }
 
         #endregion
@@ -117,6 +130,20 @@ namespace FileEncryptor.WPF.ViewModels
         {
             var file = p as FileInfo ?? SelectedFile;
             if (file is null) return;
+
+            var destination_file_name = file.FullName.EndsWith(__EncryptedFileSuffix)
+                ? file.FullName.Substring(0, file.FullName.Length - __EncryptedFileSuffix.Length)
+                : file.FullName;
+            if (!_UserDialog.SaveFile("Choose save destination", out var destination_path, destination_file_name)) return;
+
+            var timer = Stopwatch.StartNew();
+            var success = _Encryptor.Decrypt(file.FullName, destination_path, Password);
+            timer.Stop();
+
+            if (success)
+                _UserDialog.Information("Decryption", $"Decryption is successfully finished in {timer.Elapsed.TotalSeconds:0.##}s");
+            else
+                _UserDialog.Warning("Decryption", "Warning: Incorrect Password.");
         }
 
         #endregion
@@ -124,9 +151,10 @@ namespace FileEncryptor.WPF.ViewModels
         #endregion
 
 
-        public MainWindowViewModel(IUserDialog UserDialog)
+        public MainWindowViewModel(IUserDialog UserDialog, IEncryptor Encryptor)
         {
             _UserDialog = UserDialog;
+            _Encryptor = Encryptor;
         }
     }
 }
