@@ -129,6 +129,12 @@ namespace FileEncryptor.WPF.ViewModels
             var progress = new Progress<double>(percent => ProgressValue = percent);
 
             _ProcessAbortion = new CancellationTokenSource();
+            var cancel = _ProcessAbortion.Token;
+
+            var (progress_info, status_info, operation_cancel, close_window) = _UserDialog.ShowProgress("Encryption");
+            status_info.Report($"File: {file.Name} Encryption");
+
+            var combine_cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancel, operation_cancel);
 
 
             ((BaseCommand) EncryptCommand).Executable = false;
@@ -137,10 +143,10 @@ namespace FileEncryptor.WPF.ViewModels
             /*   Additional code that runs in parallel to encryption process   */
             try
             {
-                await _Encryptor.EncryptAsync(file.FullName, destination_path, Password, Progress: progress,
-                    Cancel: _ProcessAbortion.Token);
+                await _Encryptor.EncryptAsync(file.FullName, destination_path, Password, Progress: progress_info,
+                    Cancel: combine_cancellation.Token);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e) when(e.CancellationToken == combine_cancellation.Token)
             {
             }
             finally
@@ -184,8 +190,13 @@ namespace FileEncryptor.WPF.ViewModels
 
 
             var progress = new Progress<double>(percent => ProgressValue = percent);
-
             _ProcessAbortion = new CancellationTokenSource();
+            var cancel = _ProcessAbortion.Token;
+
+            var (progress_info, status_info, operation_cancel, close_window) = _UserDialog.ShowProgress("Encryption");
+            status_info.Report($"File: {file.Name} Encryption");
+
+            var combine_cancellation = CancellationTokenSource.CreateLinkedTokenSource(cancel, operation_cancel);
 
             ((BaseCommand)EncryptCommand).Executable = false;
             ((BaseCommand)DecryptCommand).Executable = false;
@@ -196,13 +207,14 @@ namespace FileEncryptor.WPF.ViewModels
             {
                 success = await decryption_task;
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException e) when (e.CancellationToken == combine_cancellation.Token)
             {
             }
             finally
             {
                 _ProcessAbortion.Dispose();
                 _ProcessAbortion = null;
+                close_window();
             }
             ((BaseCommand)EncryptCommand).Executable = true;
             ((BaseCommand)DecryptCommand).Executable = true;
